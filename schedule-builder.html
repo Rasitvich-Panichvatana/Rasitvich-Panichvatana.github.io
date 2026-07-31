@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schedule Builder</title>
+<style>
+  :root{
+    --bg: #f3f2fb;
+    --grid-line: #e4e1f5;
+    --header-bg: #ffffff;
+    --header-text: #302b63;
+    --day-text: #4a4470;
+    --card-bg: #ffffff;
+    --card-border: #e4e1f5;
+    --text-main: #23213a;
+    --text-sub: #7a7595;
+    --accent: #6c5ce7;
+    --accent-soft: #efecff;
+    --danger: #e0577a;
+    --shadow: 0 1px 2px rgba(48,43,99,0.06);
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text-main);
+    padding: 28px;
+  }
+
+  .app{
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:22px;
+    flex-wrap: wrap;
+  }
+
+  .title-block h1{
+    font-size: 22px;
+    margin:0 0 4px 0;
+    color: var(--header-text);
+    letter-spacing: -0.01em;
+  }
+  .title-block p{
+    margin:0;
+    font-size: 13px;
+    color: var(--text-sub);
+  }
+
+  .controls{
+    display:flex;
+    gap:10px;
+    flex-wrap: wrap;
+    align-items:center;
+  }
+
+  .field-group{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 6px 10px;
+    box-shadow: var(--shadow);
+  }
+  .field-group label{
+    font-size: 12px;
+    color: var(--text-sub);
+  }
+  .field-group input[type=number]{
+    width: 50px;
+    border:none;
+    outline:none;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-main);
+  }
+
+  button{
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .btn-primary{
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(108,92,231,0.35);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .btn-primary:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(108,92,231,0.45);
+  }
+
+  .btn-ghost{
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-main);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  .btn-ghost:hover{ background: var(--accent-soft); }
+
+  /* ---- Schedule Grid ---- */
+  .schedule-wrap{
+    background: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(48,43,99,0.08);
+    border: 1px solid var(--grid-line);
+    overflow-x: auto;
+  }
+
+  .grid{
+    display: grid;
+    min-width: 900px;
+  }
+
+  .corner{
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--grid-line);
+    border-right: 1px solid var(--grid-line);
+    display:flex;
+    align-items:center;
+    padding: 14px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--header-text);
+    position: sticky;
+    left: 0;
+    z-index: 3;
+  }
+
+  .hour-header{
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--grid-line);
+    border-right: 1px solid var(--grid-line);
+    display:flex;
+    align-items:center;
+    justify-content: flex-start;
+    padding: 14px 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--header-text);
+  }
+
+  .day-label{
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--grid-line);
+    border-right: 1px solid var(--grid-line);
+    display:flex;
+    align-items:center;
+    padding: 0 18px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--day-text);
+    text-transform: uppercase;
+    position: sticky;
+    left: 0;
+    background: var(--card-bg);
+    z-index: 2;
+  }
+
+  .day-label.weekend{
+    color: var(--accent);
+  }
+
+  .day-row{
+    position: relative;
+    border-bottom: 1px solid var(--grid-line);
+    cursor: pointer;
+  }
+
+  .day-row.weekend-col{
+    background: #faf9ff;
+  }
+
+  .day-row:hover{
+    background: var(--accent-soft);
+  }
+
+  .block{
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--block-border);
+    background: var(--block-bg);
+    display:flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform .1s ease, box-shadow .1s ease;
+    z-index: 2;
+  }
+  .block:hover{
+    transform: scale(1.015);
+    box-shadow: 0 4px 14px rgba(48,43,99,0.18);
+    z-index: 5;
+  }
+
+  .block .b-name{
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--block-text);
+    line-height: 1.25;
+    word-break: break-word;
+  }
+  .block .b-sub{
+    font-size: 11.5px;
+    color: var(--block-text);
+    opacity: 0.75;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  /* ---- Modal ---- */
+  .overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(35,33,58,0.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index: 50;
+    padding: 20px;
+  }
+  .overlay.show{ display:flex; }
+
+  .modal{
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    padding: 24px;
+    box-shadow: 0 20px 60px rgba(35,33,58,0.3);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h2{
+    margin: 0 0 18px 0;
+    font-size: 17px;
+    color: var(--header-text);
+  }
+
+  .form-row{
+    margin-bottom: 14px;
+  }
+  .form-row label{
+    display:block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-sub);
+    margin-bottom: 5px;
+  }
+  .form-row input[type=text], .form-row select{
+    width: 100%;
+    padding: 9px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-main);
+    background: #fbfaff;
+    outline: none;
+  }
+  .form-row input[type=text]:focus, .form-row select:focus{
+    border-color: var(--accent);
+    background: #fff;
+  }
+
+  .two-col{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .color-swatches{
+    display:flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .swatch{
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .swatch.selected{
+    border-color: var(--text-main);
+  }
+  .swatch input{
+    display:none;
+  }
+
+  .modal-actions{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    margin-top: 20px;
+    gap: 10px;
+  }
+  .modal-actions .right{
+    display:flex;
+    gap: 8px;
+  }
+
+  .btn-delete{
+    background: none;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .btn-delete:hover{ background: #fdecf1; }
+
+  .btn-cancel{
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text-sub);
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+
+  .btn-save{
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .empty-hint{
+    text-align:center;
+    color: var(--text-sub);
+    font-size: 13px;
+    margin-top: 14px;
+  }
+
+  @media (max-width: 640px){
+    body{ padding: 14px; }
+    .modal{ padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="title-block">
+      <h1>My Weekly Schedule</h1>
+      <p>Click anywhere in a day's row to add a class. Click a class to edit or delete it.</p>
+      <p id="saveStatus" style="font-size:12px;color:#8f97ab;margin-top:4px;"></p>
+    </div>
+    <div class="controls">
+      <div class="field-group">
+        <label>Start</label>
+        <input type="number" id="startHour" value="8" min="0" max="23">
+      </div>
+      <div class="field-group">
+        <label>End</label>
+        <input type="number" id="endHour" value="18" min="1" max="24">
+      </div>
+      <button class="btn-ghost" id="applyRange">Apply</button>
+      <button class="btn-ghost" id="exportBtn">Export</button>
+      <button class="btn-ghost" id="importBtn">Import</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none;">
+      <button class="btn-primary" id="addBtn">+ Add class</button>
+    </div>
+  </div>
+
+  <div class="schedule-wrap">
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="empty-hint">Tip: weekends are shaded slightly. Days run Sun → Sat. Class times can be set in 10‑minute steps (e.g. 10:30).</div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">Add class</h2>
+    <form id="blockForm">
+      <div class="form-row">
+        <label>Course / class name</label>
+        <input type="text" id="f-name" placeholder="e.g. 2301451 SOFTWARE TESTING" required>
+      </div>
+      <div class="form-row">
+        <label>Location</label>
+        <input type="text" id="f-location" placeholder="e.g. MHMK 307 | Sec 1">
+      </div>
+      <div class="form-row">
+        <label>Activity / time label</label>
+        <input type="text" id="f-activity" placeholder="e.g. Lecture, Lab, Sec 1">
+      </div>
+      <div class="form-row">
+        <label>Day</label>
+        <select id="f-day"></select>
+      </div>
+      <div class="two-col">
+        <div class="form-row">
+          <label>Start time</label>
+          <select id="f-start"></select>
+        </div>
+        <div class="form-row">
+          <label>End time</label>
+          <select id="f-end"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Color</label>
+        <div class="color-swatches" id="swatches"></div>
+      </div>
+      <input type="hidden" id="f-id">
+      <div class="modal-actions">
+        <button type="button" class="btn-delete" id="deleteBtn" style="display:none;">Delete</button>
+        <div class="right">
+          <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
+          <button type="submit" class="btn-save">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  const DAYS = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+  let START = 8, END = 18; // whole hours defining visible range
+  const STEP = 10; // minutes granularity for class start/end times
+
+  // crypto.randomUUID() requires a secure context (https/localhost) and
+  // throws when this file is opened directly (file://), so use a plain fallback instead.
+  function uid(){
+    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  }
+
+  const COLORS = [
+    { name: "Lavender", bg: "#efecff", border: "#a99cf0", text: "#4a3fa0" },
+    { name: "Sky",      bg: "#e6f4fb", border: "#5fb3dd", text: "#1c6a92" },
+    { name: "Amber",    bg: "#fff3dc", border: "#e8ab3a", text: "#a06a10" },
+    { name: "Mint",     bg: "#e5f8ef", border: "#5cc891", text: "#207a4f" },
+    { name: "Rose",     bg: "#fdecf1", border: "#e0759c", text: "#a8386a" },
+    { name: "Peach",    bg: "#ffeee2", border: "#eb9a63", text: "#a85a24" },
+    { name: "Slate",    bg: "#eef0f5", border: "#8f97ab", text: "#454b5c" },
+  ];
+
+  const STORAGE_KEY = 'schedule-builder-data';
+
+  // seed schedule, used only the very first time (no saved data yet)
+  const SEED_BLOCKS = [
+    { id: uid(), name: "Activity", location: "Location", activity: "9:00-12:00", day: 2, start: 9*60, end: 12*60, color: 6 },
+  ];
+
+  // blocks store start/end as MINUTES from midnight
+  let blocks = SEED_BLOCKS;
+
+  function loadFromStorage(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return false;
+      const data = JSON.parse(raw);
+      if(Array.isArray(data.blocks)){
+        blocks = data.blocks;
+      }
+      if(Number.isFinite(data.start) && Number.isFinite(data.end) && data.end > data.start){
+        START = data.start;
+        END = data.end;
+      }
+      return true;
+    } catch(err){
+      console.error('Failed to load saved schedule:', err);
+      return false;
+    }
+  }
+
+  function saveToStorage(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ blocks, start: START, end: END }));
+      flashSaveStatus('Saved');
+    } catch(err){
+      console.error('Failed to save schedule:', err);
+      flashSaveStatus('Could not save (storage unavailable)');
+    }
+  }
+
+  let flashTimer = null;
+  function flashSaveStatus(msg){
+    const el = document.getElementById('saveStatus');
+    if(!el) return;
+    el.textContent = msg;
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => { el.textContent = ''; }, 2000);
+  }
+
+  const grid = document.getElementById('grid');
+  const overlay = document.getElementById('overlay');
+  const form = document.getElementById('blockForm');
+  const modalTitle = document.getElementById('modalTitle');
+  const deleteBtn = document.getElementById('deleteBtn');
+  const swatchesEl = document.getElementById('swatches');
+
+  let selectedColor = 0;
+  let editingId = null;
+
+  function buildSwatches(){
+    swatchesEl.innerHTML = '';
+    COLORS.forEach((c, i) => {
+      const label = document.createElement('label');
+      label.className = 'swatch' + (i === selectedColor ? ' selected' : '');
+      label.style.background = c.bg;
+      label.style.borderColor = i === selectedColor ? c.border : 'transparent';
+      label.title = c.name;
+      label.innerHTML = `<input type="radio" name="color" value="${i}" ${i===selectedColor?'checked':''}>`;
+      label.addEventListener('click', () => {
+        selectedColor = i;
+        buildSwatches();
+      });
+      swatchesEl.appendChild(label);
+    });
+  }
+
+  function formatMinutes(m){
+    const hh = Math.floor(m / 60) % 24;
+    const mm = m % 60;
+    return hh.toString().padStart(2,'0') + ':' + mm.toString().padStart(2,'0');
+  }
+
+  function populateSelects(){
+    const daySel = document.getElementById('f-day');
+    const startSel = document.getElementById('f-start');
+    const endSel = document.getElementById('f-end');
+    daySel.innerHTML = DAYS.map((d,i) => `<option value="${i}">${d}</option>`).join('');
+
+    let opts = '';
+    for(let m = START*60; m <= END*60; m += STEP){
+      opts += `<option value="${m}">${formatMinutes(m)}</option>`;
+    }
+    startSel.innerHTML = opts;
+    endSel.innerHTML = opts;
+  }
+
+  function renderGrid(){
+    const hourCount = END - START;
+    grid.style.gridTemplateColumns = `140px repeat(${hourCount}, minmax(110px, 1fr))`;
+    grid.style.gridTemplateRows = `52px repeat(${DAYS.length}, 90px)`;
+    grid.innerHTML = '';
+
+    // corner
+    const corner = document.createElement('div');
+    corner.className = 'corner';
+    corner.textContent = 'Day / Time';
+    corner.style.gridColumn = '1';
+    corner.style.gridRow = '1';
+    grid.appendChild(corner);
+
+    // hour headers
+    for(let h = START; h < END; h++){
+      const hh = document.createElement('div');
+      hh.className = 'hour-header';
+      hh.textContent = h;
+      hh.style.gridColumn = String((h - START) + 2);
+      hh.style.gridRow = '1';
+      grid.appendChild(hh);
+    }
+
+    const rangeStartMin = START * 60;
+    const rangeEndMin = END * 60;
+    const rangeSpan = rangeEndMin - rangeStartMin;
+
+    DAYS.forEach((day, dIdx) => {
+      const isWeekend = dIdx === 0 || dIdx === 6;
+      const rowNum = dIdx + 2;
+
+      const label = document.createElement('div');
+      label.className = 'day-label' + (isWeekend ? ' weekend' : '');
+      label.textContent = day;
+      label.style.gridColumn = '1';
+      label.style.gridRow = String(rowNum);
+      grid.appendChild(label);
+
+      const row = document.createElement('div');
+      row.className = 'day-row' + (isWeekend ? ' weekend-col' : '');
+      row.style.gridColumn = `2 / ${hourCount + 2}`;
+      row.style.gridRow = String(rowNum);
+      row.style.backgroundImage = `repeating-linear-gradient(to right, var(--grid-line) 0, var(--grid-line) 1px, transparent 1px, transparent calc(100% / ${hourCount}))`;
+
+      row.addEventListener('click', (e) => {
+        if(e.target !== row) return; // ignore clicks on blocks (they stopPropagation anyway)
+        const rect = row.getBoundingClientRect();
+        const fraction = (e.clientX - rect.left) / rect.width;
+        let minutes = rangeStartMin + fraction * rangeSpan;
+        minutes = Math.round(minutes / STEP) * STEP;
+        minutes = Math.max(rangeStartMin, Math.min(minutes, rangeEndMin - STEP));
+        let endMinutes = Math.min(minutes + 60, rangeEndMin);
+        openAdd(dIdx, minutes, endMinutes);
+      });
+
+      blocks.filter(b => b.day === dIdx).forEach(b => {
+        const c = COLORS[b.color];
+        const leftPct = ((b.start - rangeStartMin) / rangeSpan) * 100;
+        const widthPct = ((b.end - b.start) / rangeSpan) * 100;
+        const el = document.createElement('div');
+        el.className = 'block';
+        el.style.left = `calc(${leftPct}% + 4px)`;
+        el.style.width = `calc(${widthPct}% - 8px)`;
+        el.style.setProperty('--block-bg', c.bg);
+        el.style.setProperty('--block-border', c.border);
+        el.style.setProperty('--block-text', c.text);
+        el.innerHTML = `<div class="b-name">${escapeHtml(b.name)}</div>` +
+          (b.location || b.activity ? `<div class="b-sub">${[escapeHtml(b.location), escapeHtml(b.activity)].filter(Boolean).join(' | ')}</div>` : '');
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openEdit(b);
+        });
+        row.appendChild(el);
+      });
+
+      grid.appendChild(row);
+    });
+  }
+
+  function escapeHtml(str){
+    if(!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function openAdd(day, startMin, endMin){
+    editingId = null;
+    modalTitle.textContent = 'Add class';
+    deleteBtn.style.display = 'none';
+    form.reset();
+    selectedColor = 0;
+    populateSelects();
+    buildSwatches();
+    document.getElementById('f-day').value = day;
+    document.getElementById('f-start').value = startMin;
+    document.getElementById('f-end').value = endMin;
+    overlay.classList.add('show');
+    document.getElementById('f-name').focus();
+  }
+
+  function openEdit(block){
+    editingId = block.id;
+    modalTitle.textContent = 'Edit class';
+    deleteBtn.style.display = 'inline-block';
+    populateSelects();
+    document.getElementById('f-name').value = block.name;
+    document.getElementById('f-location').value = block.location;
+    document.getElementById('f-activity').value = block.activity;
+    document.getElementById('f-day').value = block.day;
+    document.getElementById('f-start').value = block.start;
+    document.getElementById('f-end').value = block.end;
+    selectedColor = block.color;
+    buildSwatches();
+    overlay.classList.add('show');
+  }
+
+  function closeModal(){
+    overlay.classList.remove('show');
+    editingId = null;
+  }
+
+  document.getElementById('addBtn').addEventListener('click', () => openAdd(1, START*60, Math.min(START*60 + 60, END*60)));
+  document.getElementById('cancelBtn').addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => { if(e.target === overlay) closeModal(); });
+
+  document.getElementById('applyRange').addEventListener('click', () => {
+    const s = parseInt(document.getElementById('startHour').value, 10);
+    const e = parseInt(document.getElementById('endHour').value, 10);
+    if(isNaN(s) || isNaN(e) || e <= s){
+      alert('End hour must be greater than start hour.');
+      return;
+    }
+    START = s;
+    END = e;
+    blocks = blocks.filter(b => b.start >= START*60 && b.end <= END*60);
+    renderGrid();
+    saveToStorage();
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('f-name').value.trim();
+    const location = document.getElementById('f-location').value.trim();
+    const activity = document.getElementById('f-activity').value.trim();
+    const day = parseInt(document.getElementById('f-day').value, 10);
+    const start = parseInt(document.getElementById('f-start').value, 10);
+    const end = parseInt(document.getElementById('f-end').value, 10);
+
+    if(end <= start){
+      alert('End time must be after start time.');
+      return;
+    }
+
+    if(editingId){
+      const b = blocks.find(x => x.id === editingId);
+      Object.assign(b, { name, location, activity, day, start, end, color: selectedColor });
+    } else {
+      const overlap = blocks.some(b => b.day === day && start < b.end && end > b.start);
+      if(overlap){
+        alert('This overlaps with an existing class on that day.');
+        return;
+      }
+      blocks.push({ id: uid(), name, location, activity, day, start, end, color: selectedColor });
+    }
+    closeModal();
+    renderGrid();
+    saveToStorage();
+  });
+
+  deleteBtn.addEventListener('click', () => {
+    blocks = blocks.filter(b => b.id !== editingId);
+    closeModal();
+    renderGrid();
+    saveToStorage();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const data = { blocks, start: START, end: END };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'my-schedule.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  const importFileInput = document.getElementById('importFile');
+  document.getElementById('importBtn').addEventListener('click', () => importFileInput.click());
+  importFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = JSON.parse(reader.result);
+        if(!Array.isArray(data.blocks)) throw new Error('Invalid file: missing blocks array');
+        blocks = data.blocks;
+        if(Number.isFinite(data.start) && Number.isFinite(data.end) && data.end > data.start){
+          START = data.start;
+          END = data.end;
+          document.getElementById('startHour').value = START;
+          document.getElementById('endHour').value = END;
+        }
+        renderGrid();
+        saveToStorage();
+        flashSaveStatus('Imported');
+      } catch(err){
+        alert('Could not read that file. Make sure it is a schedule exported from this tool.');
+      }
+      importFileInput.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  const hadSavedData = loadFromStorage();
+  document.getElementById('startHour').value = START;
+  document.getElementById('endHour').value = END;
+  populateSelects();
+  buildSwatches();
+  renderGrid();
+  if(hadSavedData) flashSaveStatus('Loaded your saved schedule');
+})();
+</script>
+
+</body>
+</html>
