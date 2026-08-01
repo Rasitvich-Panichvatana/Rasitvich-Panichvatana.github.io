@@ -454,7 +454,7 @@
 
 <script>
 (function(){
-  const DAYS = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+  const DAYS = ["SAT","SUN","MON","TUE","WED","THU","FRI"];
   let START = 8, END = 18; // whole hours defining visible range
   const STEP = 10; // minutes granularity for class start/end times
 
@@ -478,7 +478,7 @@
 
   // seed schedule, used only the very first time (no saved data yet)
   const SEED_BLOCKS = [
-    { id: uid(), name: "Activity", location: "Location", activity: "9:00-12:00", day: 2, start: 9*60, end: 12*60, color: 6 },
+    { id: uid(), name: "Activity", location: "Location", activity: "9:00-12:00", day: 3, start: 9*60, end: 12*60, color: 6 },
   ];
 
   // blocks store start/end as MINUTES from midnight
@@ -598,7 +598,7 @@
     const rangeSpan = rangeEndMin - rangeStartMin;
 
     DAYS.forEach((day, dIdx) => {
-      const isWeekend = dIdx === 0 || dIdx === 6;
+      const isWeekend = dIdx === 0 || dIdx === 1;
       const rowNum = dIdx + 2;
 
       const label = document.createElement('div');
