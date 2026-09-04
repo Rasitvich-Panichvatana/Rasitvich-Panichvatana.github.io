@@ -138,7 +138,15 @@
 
       .grid {
         display: grid;
-        min-width: 900px;
+        width: 100%;
+      }
+
+      .schedule-wrap.capturing {
+        overflow: visible !important;
+      }
+      .schedule-wrap.capturing .corner,
+      .schedule-wrap.capturing .day-label {
+        position: static !important;
       }
 
       .corner {
@@ -668,7 +676,7 @@
 
         function renderGrid() {
           const hourCount = END - START;
-          grid.style.gridTemplateColumns = `140px repeat(${hourCount}, minmax(110px, 1fr))`;
+          grid.style.gridTemplateColumns = `110px repeat(${hourCount}, minmax(48px, 1fr))`;
           grid.style.gridTemplateRows = `52px repeat(${DAYS.length}, 90px)`;
           grid.innerHTML = "";
 
@@ -936,11 +944,37 @@
         // ---- Download as PNG / PDF ----
         async function captureScheduleCanvas() {
           const target = document.querySelector(".schedule-wrap");
-          return await html2canvas(target, {
-            backgroundColor: "#ffffff",
-            scale: 2,
-            useCORS: true,
-          });
+
+          // html2canvas doesn't reliably handle overflow:auto or position:sticky,
+          // so temporarily expand the wrapper to its full content size and drop
+          // sticky positioning before capturing, then restore everything after.
+          target.classList.add("capturing");
+          const prevWidth = target.style.width;
+          target.style.width = target.scrollWidth + "px";
+
+          // force a reflow so scrollWidth/scrollHeight reflect the expanded state
+          void target.offsetWidth;
+
+          const fullWidth = target.scrollWidth;
+          const fullHeight = target.scrollHeight;
+
+          try {
+            const canvas = await html2canvas(target, {
+              backgroundColor: "#ffffff",
+              scale: 2,
+              useCORS: true,
+              width: fullWidth,
+              height: fullHeight,
+              windowWidth: fullWidth,
+              windowHeight: fullHeight,
+              scrollX: 0,
+              scrollY: 0,
+            });
+            return canvas;
+          } finally {
+            target.classList.remove("capturing");
+            target.style.width = prevWidth;
+          }
         }
 
         document
